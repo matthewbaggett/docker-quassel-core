@@ -1,13 +1,25 @@
-FROM ubuntu
-MAINTAINER Christian Lück <christian@lueck.tv>
+FROM alpine:3.5
+LABEL maintainer "Matthew Baggett <matthew@baggett.me>"
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
-	quassel-core \
-	libqt4-sql-psql \
-	libqca2-plugin-ossl libicu55
+RUN apk add --no-cache \
+    quassel-core \
+    icu-libs \
+    qt-sqlite \
+    qt-postgresql \
+    openssl
 
-# use ENTRYPOINT instead of CMD so that we can easily pass additional arguments to the run command
-ENTRYPOINT ["quasselcore", "--configdir=/var/lib/quassel/"]
+RUN mkdir /etc/quasselcore/ && \
+	chown -R quassel:root /etc/quasselcore/
 
-VOLUME ["/var/lib/quassel"]
+WORKDIR /etc/quasselcore/
+
+VOLUME ["/etc/quasselcore/"]
+
+ENTRYPOINT ["/usr/bin/quasselwrapper.sh"]
+CMD ["-c","/etc/quasselcore/","--require-ssl"]
+
 EXPOSE 4242
+
+COPY openssl.cnf /etc/quasselcore/
+COPY gen_certificate.sh /etc/quasselcore/
+COPY wrapper.sh /usr/bin/quasselwrapper.sh
